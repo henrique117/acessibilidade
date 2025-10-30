@@ -15,7 +15,7 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @vite(['resources/css/login.css', 'resources/js/login.js'])
+        @vite('resources/css/login.css')
 
         <!-- Styles -->
         @livewireStyles

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Demandas;
 use App\Models\Teste;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DemandaGController extends Controller
 {
@@ -16,55 +17,47 @@ class DemandaGController extends Controller
     }
 
     public function store(Request $request){
-        echo($request);
-        $urls = $request->input('url');
-        $nome_paginas = $request->input('nome_pagina');
-        $paginas = '{"paginas":[';
 
-        if($request->guideliness){
-        foreach($urls as $key=>$url){
-            $paginas = $paginas.'{"url":"'.$url.'"'.','.'"pagina":'.'"'.$nome_paginas[$key].'"'.'},';
+        $paginasData = [];
+        if ($request->has('guideliness') && $request->input('guideliness') == true) {
+            $urls = $request->input('url', []);
+            $nome_paginas = $request->input('nome_pagina', []);
+
+            foreach ($urls as $key => $url) {
+                if (!empty($url) && isset($nome_paginas[$key])) {
+                    $paginasData[] = [
+                        'url' => $url,
+                        'pagina' => $nome_paginas[$key]
+                    ];
+                }
+            }
         }
-        $paginas = substr($paginas,0,-1);
-        $paginas = $paginas."]}";}
         
-        $demanda_criar = new Demandas();
+        try {
+            DB::transaction(function () use ($request, $paginasData) {
+                
+                $demanda_criar = Demandas::create([
+                    'nome' => $request->input('nome'),
+                    'descricao' => $request->input('descricao'),
+                    'password' => $request->input('senha'),
+                    'status' => "Em andamento",
+                    'paginas' => $paginasData,
+                    'testeUsuario' => $request->has('testeComUsuario'),
+                    'guideliness' => $request->has('guideliness'),
+                ]);
 
-        $demanda_criar->nome = $request->nome;
-        $demanda_criar->descricao = $request->descricao;
-        $demanda_criar->password = $request->senha;
-        $demanda_criar->status = "Em andamento";
-        $demanda_criar->paginas = $paginas;
-        if($request->input("testeComUsuario")){
-            $demanda_criar->testeUsuario = true;
+                if ($demanda_criar->testeUsuario && $request->has('titulo')) {
+                    Teste::create([
+                        'titulo'=> $request->input('titulo'),
+                        'dispositivo'=> $request->input('dispositivo'),
+                        'avaliacao_id' => $demanda_criar->id,
+                    ]);
+                }
+            });
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors(['db_error' => 'Erro ao salvar no banco: ' . $e->getMessage()]);
         }
-        else{
-            $demanda_criar->testeUsuario = false;
-        }
-        if($request->input("guideliness")){
-            $demanda_criar->guideliness = true;
-        }
-        else{
-            $demanda_criar->guideliness = false;
-        }
-
-        $demanda_criar->save();
-        
-
-        if($request->input("testeComUsuario"))
-        {
-            $teste = new Teste();
-            $teste->titulo= $request->titulo;
-            $teste->dispositivo= $request->dispositivo;
-            $teste->avaliacao_id = $demanda_criar->id;
-            $teste->save();
-        }
-
-
-        
 
         return redirect('/');
     }
-
-
 }
