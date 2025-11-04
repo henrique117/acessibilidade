@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Demandas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Hash;
 
 class DemandaController extends Controller
 {
@@ -20,11 +21,13 @@ class DemandaController extends Controller
     public function armazenar(Request $request){
 
         $demanda = Demandas::find($request->input('id'));
-        
-        // $teste = $demanda->passoword === $request->input('password');
-        
 
-        if($demanda->password == $request->input('password')){
+        if (!$demanda) {
+            // Caso a demanda não seja encontrada
+            return redirect()->route('demanda.mostrar',['error' => 'Demanda não encontrada']);
+        }
+        
+        if(Hash::check($request->input('password'), $demanda->password)){
 
             Cookie::queue('demanda_authenticated', $demanda->id, 240);
 
@@ -36,11 +39,10 @@ class DemandaController extends Controller
             }
         }
         else{
+            // Senha incorreta
             return redirect()->route('demanda.mostrar',['error' => 'Senha incorreta']);
         }
         
     }
 
-    
-    //
 }
