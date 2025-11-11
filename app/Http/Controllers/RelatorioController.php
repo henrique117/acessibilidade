@@ -36,8 +36,7 @@ class RelatorioController extends Controller
             $avaliacao = array();
             $paginas_Erro = array();
 
-            $paginas = json_decode($demanda->paginas)->paginas;
-
+            $paginas = $demanda->paginas;
 
             if(isset($erros)){
                 foreach($itens as $item){

@@ -10,6 +10,7 @@ require __DIR__ . '/crud/relatorio.php';
 
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DemandaController;
 
 Route::middleware([
     'auth:sanctum',
@@ -20,5 +21,8 @@ Route::middleware([
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+    Route::get('/demanda/gerarRelatorio/{id}', [DemandaController::class, 'show'])->name('demandas.gerarRelatorio');
+    Route::post('/demanda/entrar', [DemandaController::class, 'entrarNaDemanda'])->name('demandas.entrar');
 
 });

@@ -45,4 +45,12 @@ class DemandaController extends Controller
         
     }
 
+    public function show($id)
+    {
+        $demanda = Demandas::findOrFail($id);
+
+        return view('components.demandas.demanda-relatorio', [
+            'demanda' => $demanda
+        ]);
+    }
 }
