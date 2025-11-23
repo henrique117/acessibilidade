@@ -10,4 +10,9 @@ class Teste extends Model
     protected $table = 'teste';
     use HasFactory;
 
+    protected $fillable = [
+        'titulo',
+        'dispositivo',
+        'avaliacao_id',
+    ];
 }

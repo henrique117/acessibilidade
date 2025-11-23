@@ -60,11 +60,6 @@ class AvaliacaoController extends Controller
         $pgs = Demandas::where('id','=',$id_demanda)->first();
         $pgs = $pgs->paginas;
 
-        $pgs = json_decode($pgs)->paginas;
-        
-
-      
-
         return view("avaliacao", ['checklist' => $check_nome,'descricao' => $resultado->descricao,'criterios' => $criterios,'id'=> $id,'rota' => $rota,'metodo'=>$metodo,'tem_erro'=> $final,'id_demanda' => $id_demanda,'paginas' => $pgs,'pgs'=> $paginas]);
     }
 
