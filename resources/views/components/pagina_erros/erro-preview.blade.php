@@ -16,7 +16,7 @@
                     
                     <h1>PÁGINAS</h1>
                     @foreach ($pgs["$itemChecklist->id"] as $paginas)
-                    <p class="pe">{{$paginas->pagina}} - {{$paginas->url}}</p>
+                    <p class="pe">{{$paginas['url']}} - {{$paginas['pagina']}}</p>
                     @endforeach
                     <div class="espacoImagens">IMAGENS</div>
                     @foreach ($tem_erro["$itemChecklist->id"]->images as $imagem)
