@@ -3,93 +3,137 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Checklist;
-use App\Models\Diretriz;
 use App\Models\Item;
 use App\Models\Erro;
 use App\Models\Image;
 use App\Models\Demandas;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Browsershot\Browsershot;
-use Illuminate\Support\Str;
 
 class RelatorioController extends Controller
 {
     private function prepararDadosRelatorio(Request $request)
     {
         $demandaId = $request->cookie('demanda_authenticated') ?? $request->input('demanda_id');
+        
         $demanda = Demandas::find($demandaId);
 
         if (!$demanda) return null;
 
         $usuario = Auth::user();
+
+        $erros = Erro::with('item')->where('avaliacao_id', $demandaId)->get();
         
-        $erros = Erro::where('avaliacao_id', $demandaId)->get();
         $isRelatorioCompleto = $request->input('relatorio_completo');
         $paginasSelecionadas = $request->input('paginas', []); 
+
         $todasPaginas = $demanda->paginas;
+        if (is_string($todasPaginas)) {
+            $todasPaginas = json_decode($todasPaginas, true);
+        }
+        if (!is_array($todasPaginas)) {
+            $todasPaginas = [];
+        }
 
         $relatorioPorPagina = [];
-        $estatisticasGlobais = [
-            'total_erros' => 0,
-            'por_criticidade' => ['Alta' => 0, 'Media' => 0, 'Baixa' => 0]
-        ];
+        
+        $statsErros = [];
 
-        if ($todasPaginas) {
-            foreach ($todasPaginas as $index => $paginaObj) {
+        $totalTelasAnalizadas = 0;
+        $totalDefeitosGeral = 0;
+
+        foreach ($todasPaginas as $index => $paginaObj) {
+            
+            if ($isRelatorioCompleto || in_array((string)$index, $paginasSelecionadas) || in_array($index, $paginasSelecionadas)) {
                 
-                if ($isRelatorioCompleto || in_array($index, $paginasSelecionadas)) {
-                    
-                    $errosDestaPagina = [];
-                    $statsPagina = ['Alta' => 0, 'Media' => 0, 'Baixa' => 0, 'Total' => 0];
+                $totalTelasAnalizadas++;
+                $errosDestaPagina = [];
 
-                    foreach ($erros as $erro) {
-                        $afetaEstaPagina = false;
-                        
-                        if (is_string($erro->pgs)) {
-                            $afetaEstaPagina = strpos($erro->pgs, (string)$index) !== false;
-                        } elseif (is_array($erro->pgs)) {
-                            $afetaEstaPagina = in_array($index, $erro->pgs);
-                        }
+                foreach ($erros as $erro) {
+                    $afetaEstaPagina = false;
 
-                        if ($afetaEstaPagina) {
-                            $erro->item = Item::find($erro->id_item); 
-                            $erro->images = Image::where('id_erro', $erro->id)->get();
-                            
-                            $errosDestaPagina[] = $erro;
+                    $pgsString = (string)$erro->pgs;
+                    $indiceProcurado = (string)$index;
 
-                            $estatisticasGlobais['total_erros']++;
-                            
-                            if ($erro->em_cfmd == 2) {
-                                $statsPagina['Alta']++;
-                                $estatisticasGlobais['por_criticidade']['Alta']++;
-                            } elseif ($erro->em_cfmd == 3) {
-                                $statsPagina['Media']++;
-                                $estatisticasGlobais['por_criticidade']['Media']++;
-                            } else {
-                                $statsPagina['Baixa']++;
-                                $estatisticasGlobais['por_criticidade']['Baixa']++;
-                            }
-                            $statsPagina['Total']++;
-                        }
+                    if (strpos($pgsString, ',') !== false) {
+                        $indicesArray = explode(',', $pgsString);
+                        $afetaEstaPagina = in_array($indiceProcurado, $indicesArray);
+                    } else {
+                        $afetaEstaPagina = strpos($pgsString, $indiceProcurado) !== false;
                     }
 
-                    $paginaInfo = is_array($paginaObj) ? $paginaObj : $paginaObj->toArray();
+                    if ($afetaEstaPagina) {
+                        $erro->images = Image::where('id_erro', $erro->id)->get();
+                        
+                        $errosDestaPagina[] = $erro;
+                        $totalDefeitosGeral++;
 
-                    $relatorioPorPagina[] = [
-                        'info' => $paginaInfo,
-                        'erros' => $errosDestaPagina,
-                        'stats' => $statsPagina
-                    ];
+                        $idItem = $erro->id_item;
+                        $nomeItem = $erro->item ? $erro->item->descricao : ($erro->titulo ?? 'Item #'.$idItem);
+
+                        if (!isset($statsErros[$idItem])) {
+                            $statsErros[$idItem] = [
+                                'nome' => $nomeItem,
+                                'ocorrencias' => 0
+                            ];
+                        }
+                        $statsErros[$idItem]['ocorrencias']++;
+                    }
                 }
+
+                $paginaInfo = is_array($paginaObj) ? $paginaObj : (array)$paginaObj;
+
+                $relatorioPorPagina[] = [
+                    'info' => $paginaInfo,
+                    'erros' => $errosDestaPagina,
+                    'total_erros_pagina' => count($errosDestaPagina)
+                ];
             }
         }
+
+        $totalDefeitosUnicos = 0;
+        $totalDefeitosRecorrentes = 0;
+
+        uasort($statsErros, function ($a, $b) {
+            return $b['ocorrencias'] <=> $a['ocorrencias'];
+        });
+
+        foreach ($statsErros as $stat) {
+            if ($stat['ocorrencias'] === 1) {
+                $totalDefeitosUnicos++;
+            } else {
+                $totalDefeitosRecorrentes += $stat['ocorrencias'];
+            }
+        }
+
+        $percUnicos = $totalDefeitosGeral > 0 ? ($totalDefeitosUnicos / $totalDefeitosGeral) * 100 : 0;
+        $percRecorrentes = $totalDefeitosGeral > 0 ? ($totalDefeitosRecorrentes / $totalDefeitosGeral) * 100 : 0;
+
+        $ranking = array_values($statsErros);
+
+        $estatisticasDetalhadas = [
+            'total_telas' => $totalTelasAnalizadas,
+            'total_defeitos' => $totalDefeitosGeral,
+            'total_unicos' => $totalDefeitosUnicos,
+            'perc_unicos' => number_format($percUnicos, 1, ',', '.') . '%',
+            'total_recorrentes' => $totalDefeitosRecorrentes,
+            'perc_recorrentes' => number_format($percRecorrentes, 1, ',', '.') . '%',
+            
+            'top_1_nome' => $ranking[0]['nome'] ?? 'Nenhum',
+            'top_1_qtd' => $ranking[0]['ocorrencias'] ?? 0,
+            
+            'top_2_nome' => $ranking[1]['nome'] ?? 'Nenhum',
+            'top_2_qtd' => $ranking[1]['ocorrencias'] ?? 0,
+            
+            'top_3_nome' => $ranking[2]['nome'] ?? 'Nenhum',
+            'top_3_qtd' => $ranking[2]['ocorrencias'] ?? 0,
+        ];
 
         return [
             'demanda' => $demanda,
             'usuario' => $usuario,
             'relatorioPorPagina' => $relatorioPorPagina,
-            'estatisticas' => $estatisticasGlobais,
+            'estatisticas' => $estatisticasDetalhadas,
             'filtros' => [
                 'tipo' => $request->tipo,
                 'wcag' => $request->diretriz

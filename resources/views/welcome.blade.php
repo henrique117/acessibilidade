@@ -108,10 +108,10 @@
                         @csrf
                         <div>
                             <label for="opcaoAvaliacoes">TIPO DE AVALIAÇÃO: </label>
-                            <select id="opcaoAvaliacoes" name="diretriz" onchange="this.form.submit()">
+                            <!-- <select id="opcaoAvaliacoes" name="diretriz" onchange="this.form.submit()">
                                 <option value="abnt" @if($opcaoEscolhida == 'abnt') selected @endif>ABNT</option>
                                 <option value="wcag" @if($opcaoEscolhida == 'wcag') selected @endif>WCAG</option>
-                            </select>
+                            </select> -->
                         </div>
             
                         <div>
