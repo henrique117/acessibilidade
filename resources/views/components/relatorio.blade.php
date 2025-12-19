@@ -64,7 +64,7 @@
         .stat-label { font-size: 1em; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
 
         /* Tabela de Recorrência */
-        .tabela-stats { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .tabela-stats { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .tabela-stats th { background: #34495e; color: #fff; padding: 12px; text-align: left; }
         .tabela-stats td { border: 1px solid #ddd; padding: 12px; }
         .tabela-stats tr:nth-child(even) { background: #f9f9f9; }
@@ -146,7 +146,7 @@
                     @foreach($relatorioPorPagina as $pag)
                         <li class="toc-subitem">
                             <a href="#pag-{{ $loop->iteration }}" class="toc-sublink">
-                                3.{{ $loop->iteration }} {{ \Illuminate\Support\Str::limit($pag['info']['url'] ?? 'Página ' . $loop->iteration, 60) }}
+                                3.{{ $loop->iteration }} - {{ \Illuminate\Support\Str::limit($pag['info']['url'] ?? 'Página ' . $loop->iteration, 60) }}
                             </a>
                         </li>
                     @endforeach

@@ -20,4 +20,14 @@ class Item extends Model
     {
         return $this->belongsTo(Checklist::class);
     }
+
+    /**
+     * CORREÇÃO: Relacionamento Muitos-para-Muitos com Critérios.
+     * Necessário para o @foreach ($itemChecklist->criterios ...) funcionar.
+     */
+    public function criterios()
+    {
+        // Tabela pivô: criterio_item
+        return $this->belongsToMany(Criterio::class, 'criterio_item', 'item_id', 'criterio_id');
+    }
 }
