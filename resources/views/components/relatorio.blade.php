@@ -146,6 +146,7 @@
                     @foreach($relatorioPorPagina as $pag)
                         <li class="toc-subitem">
                             <a href="#pag-{{ $loop->iteration }}" class="toc-sublink">
+                                {{-- REVERTIDO: Voltamos a usar 'url' como título da página, conforme estava antes --}}
                                 3.{{ $loop->iteration }} - {{ \Illuminate\Support\Str::limit($pag['info']['url'] ?? 'Página ' . $loop->iteration, 60) }}
                             </a>
                         </li>
@@ -190,7 +191,7 @@
             </div>
         </div>
 
-        <!-- Tabela de Tipos de Defeito -->
+        <!-- Tabela de Tipos de Defeito (Recorrência) -->
         <h3>Análise de Recorrência</h3>
         <table class="tabela-stats">
             <thead>
@@ -216,6 +217,31 @@
                     </td>
                     <td>{{ $estatisticas['total_recorrentes'] }}</td>
                     <td>{{ $estatisticas['perc_recorrentes'] }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- NOVA TABELA: Conformidade WCAG -->
+        <h3>Conformidade WCAG</h3>
+        <table class="tabela-stats">
+            <thead>
+                <tr>
+                    <th>Nível de Conformidade</th>
+                    <th>Porcentagem dos Defeitos</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Porcentagem Conformidade A</strong></td>
+                    <td>{{ $estatisticas['perc_A'] }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Porcentagem Conformidade AA</strong></td>
+                    <td>{{ $estatisticas['perc_AA'] }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Porcentagem Conformidade AAA</strong></td>
+                    <td>{{ $estatisticas['perc_AAA'] }}</td>
                 </tr>
             </tbody>
         </table>
@@ -309,7 +335,6 @@
                             <span class="erro-id">ID: #{{ $erro->id }}</span>
                         </div>
                         
-                        <!-- Nome do Item do Checklist -->
                         <div style="margin-bottom: 10px; font-weight: bold; color: #2c3e50;">
                              {{ $erro->item->descricao ?? $erro->titulo ?? 'Erro Identificado' }}
                         </div>

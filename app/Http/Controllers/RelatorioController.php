@@ -27,8 +27,9 @@ class RelatorioController extends Controller
         $usuario = Auth::user();
 
         // 1. DADOS COMUNS (Erros e Páginas)
-        // Carregamos item e imagens dos erros
-        $erros = Erro::with('item', 'images')->where('avaliacao_id', $demandaId)->get();
+        // Carregamos item, critérios do item e imagens dos erros
+        // Importante: 'item.criterios' para poder calcular A/AA/AAA
+        $erros = Erro::with(['item.criterios', 'images'])->where('avaliacao_id', $demandaId)->get();
         
         $paginasDemanda = $demanda->paginas;
         if (is_string($paginasDemanda)) $paginasDemanda = json_decode($paginasDemanda, true);
@@ -44,15 +45,12 @@ class RelatorioController extends Controller
         // 2. RECUPERAÇÃO DE CATEGORIAS (ESSENCIAL PARA A VIEW WELCOME)
         $categorias = [];
         
-        // CORREÇÃO: Carregamos 'criterios' dentro de 'itens' para evitar o erro na view
         if ($opcaoEscolhida === 'wcag') {
-            // Diretrizes -> Critérios -> Itens -> (Checklist e Critérios do Item)
             $categorias = Diretriz::with([
                 'criterios.itens.checklist', 
                 'criterios.itens.criterios' 
             ])->get();
         } else {
-            // Checklists -> Itens -> (Critérios e Checklist)
             $categorias = Checklist::with([
                 'itens.criterios', 
                 'itens.checklist'
@@ -93,6 +91,11 @@ class RelatorioController extends Controller
         $totalTelasAnalizadas = 0;
         $totalDefeitosGeral = 0;
 
+        // Contadores para Níveis de Conformidade
+        $qtdA = 0;
+        $qtdAA = 0;
+        $qtdAAA = 0;
+
         foreach ($paginasDemanda as $index => $paginaObj) {
             $indexStr = (string)$index;
             
@@ -117,7 +120,26 @@ class RelatorioController extends Controller
                         $errosDestaPagina[] = $erro;
                         $totalDefeitosGeral++;
 
-                        // Coleta dados para estatísticas
+                        // --- LÓGICA DE CONFORMIDADE WCAG ---
+                        // Pega os níveis dos critérios associados ao item deste erro
+                        $niveis = [];
+                        if ($erro->item && $erro->item->criterios) {
+                            $niveis = $erro->item->criterios->pluck('conformidade')->map(function($v) {
+                                return strtoupper($v);
+                            })->toArray();
+                        }
+
+                        // Prioridade: Se tiver critério A, conta como A. Se não, AA. Se não, AAA.
+                        if (in_array('A', $niveis)) {
+                            $qtdA++;
+                        } elseif (in_array('AA', $niveis)) {
+                            $qtdAA++;
+                        } elseif (in_array('AAA', $niveis)) {
+                            $qtdAAA++;
+                        }
+                        // -----------------------------------
+
+                        // Coleta dados para estatísticas de recorrência
                         $idItem = $erro->id_item;
                         $nomeItem = $erro->item ? $erro->item->descricao : ($erro->titulo ?? 'Item #'.$idItem);
 
@@ -138,7 +160,7 @@ class RelatorioController extends Controller
             }
         }
 
-        // Cálculo das Estatísticas Finais
+        // Cálculo das Estatísticas Finais (Únicos vs Recorrentes)
         $totalDefeitosUnicos = 0;
         $totalDefeitosRecorrentes = 0;
 
@@ -154,17 +176,33 @@ class RelatorioController extends Controller
             }
         }
 
+        // Cálculo de Porcentagens de Recorrência
         $percUnicos = $totalDefeitosGeral > 0 ? ($totalDefeitosUnicos / $totalDefeitosGeral) * 100 : 0;
         $percRecorrentes = $totalDefeitosGeral > 0 ? ($totalDefeitosRecorrentes / $totalDefeitosGeral) * 100 : 0;
+        
+        // Cálculo de Porcentagens de Conformidade
+        $percA = $totalDefeitosGeral > 0 ? ($qtdA / $totalDefeitosGeral) * 100 : 0;
+        $percAA = $totalDefeitosGeral > 0 ? ($qtdAA / $totalDefeitosGeral) * 100 : 0;
+        $percAAA = $totalDefeitosGeral > 0 ? ($qtdAAA / $totalDefeitosGeral) * 100 : 0;
+
         $ranking = array_values($statsErros);
 
         $estatisticasDetalhadas = [
             'total_telas' => $totalTelasAnalizadas,
             'total_defeitos' => $totalDefeitosGeral,
+            
+            // Recorrência
             'total_unicos' => $totalDefeitosUnicos,
-            'perc_unicos' => number_format($percUnicos, 1, ',', '.') . '%',
+            'perc_unicos' => number_format($percUnicos, 2, ',', '.') . '%',
             'total_recorrentes' => $totalDefeitosRecorrentes,
-            'perc_recorrentes' => number_format($percRecorrentes, 1, ',', '.') . '%',
+            'perc_recorrentes' => number_format($percRecorrentes, 2, ',', '.') . '%',
+
+            // Conformidade WCAG
+            'perc_A' => number_format($percA, 2, ',', '.') . '%',
+            'perc_AA' => number_format($percAA, 2, ',', '.') . '%',
+            'perc_AAA' => number_format($percAAA, 2, ',', '.') . '%',
+            
+            // Ranking
             'top_1_nome' => $ranking[0]['nome'] ?? 'Nenhum',
             'top_1_qtd' => $ranking[0]['ocorrencias'] ?? 0,
             'top_2_nome' => $ranking[1]['nome'] ?? 'Nenhum',
