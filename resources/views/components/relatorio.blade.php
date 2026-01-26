@@ -146,7 +146,7 @@
                     @foreach($relatorioPorPagina as $pag)
                         <li class="toc-subitem">
                             <a href="#pag-{{ $loop->iteration }}" class="toc-sublink">
-                                {{-- REVERTIDO: Voltamos a usar 'url' como título da página, conforme estava antes --}}
+                                {{-- Exibe 'url' como texto, conforme solicitado (revertido para o estado anterior) --}}
                                 3.{{ $loop->iteration }} - {{ \Illuminate\Support\Str::limit($pag['info']['url'] ?? 'Página ' . $loop->iteration, 60) }}
                             </a>
                         </li>
@@ -213,7 +213,7 @@
                 <tr>
                     <td>
                         <strong>Defeitos Recorrentes</strong><br>
-                        <small style="color:#666">Erros repetidos (mesmo padrão) em múltiplas telas</small>
+                        <small style="color:#666">Erros repetidos em múltiplas telas</small>
                     </td>
                     <td>{{ $estatisticas['total_recorrentes'] }}</td>
                     <td>{{ $estatisticas['perc_recorrentes'] }}</td>
@@ -221,27 +221,47 @@
             </tbody>
         </table>
 
-        <!-- NOVA TABELA: Conformidade WCAG -->
-        <h3>Conformidade WCAG</h3>
+        <!-- Tabela Conformidade WCAG (Nível) -->
+        <h3>Níveis de Conformidade WCAG</h3>
         <table class="tabela-stats">
             <thead>
                 <tr>
-                    <th>Nível de Conformidade</th>
+                    <th>Nível</th>
+                    <th>Porcentagem dos Defeitos</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Nível A</strong></td><td>{{ $estatisticas['perc_A'] }}</td></tr>
+                <tr><td><strong>Nível AA</strong></td><td>{{ $estatisticas['perc_AA'] }}</td></tr>
+                <tr><td><strong>Nível AAA</strong></td><td>{{ $estatisticas['perc_AAA'] }}</td></tr>
+            </tbody>
+        </table>
+
+        <!-- NOVA TABELA: Princípios WCAG -->
+        <h3>Princípios WCAG</h3>
+        <table class="tabela-stats">
+            <thead>
+                <tr>
+                    <th>Princípio</th>
                     <th>Porcentagem dos Defeitos</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>Porcentagem Conformidade A</strong></td>
-                    <td>{{ $estatisticas['perc_A'] }}</td>
+                    <td><strong>1. Perceptível</strong><br><small style="color:#666">Informações e interface devem ser apresentadas de forma que os usuários possam perceber.</small></td>
+                    <td>{{ $estatisticas['perc_p1'] }}</td>
                 </tr>
                 <tr>
-                    <td><strong>Porcentagem Conformidade AA</strong></td>
-                    <td>{{ $estatisticas['perc_AA'] }}</td>
+                    <td><strong>2. Operável</strong><br><small style="color:#666">Componentes de interface e navegação devem ser operáveis.</small></td>
+                    <td>{{ $estatisticas['perc_p2'] }}</td>
                 </tr>
                 <tr>
-                    <td><strong>Porcentagem Conformidade AAA</strong></td>
-                    <td>{{ $estatisticas['perc_AAA'] }}</td>
+                    <td><strong>3. Compreensível</strong><br><small style="color:#666">Informações e a operação da interface devem ser compreensíveis.</small></td>
+                    <td>{{ $estatisticas['perc_p3'] }}</td>
+                </tr>
+                <tr>
+                    <td><strong>4. Robusto</strong><br><small style="color:#666">O conteúdo deve ser robusto o suficiente para ser interpretado por várias tecnologias.</small></td>
+                    <td>{{ $estatisticas['perc_p4'] }}</td>
                 </tr>
             </tbody>
         </table>
@@ -284,7 +304,9 @@
             @endif
         </div>
 
-        <!-- Resumo por Página Simplificado -->
+        <div class="page-break"></div>
+
+        <!-- Resumo por Página -->
         <h3 style="margin-top: 40px;">Resumo por Página</h3>
         <table class="tabela-resumo">
             <thead>
@@ -297,6 +319,7 @@
                 @foreach($relatorioPorPagina as $pag)
                     <tr>
                         <td class="col-pag">
+                            {{-- Usa 'url' como título e 'pagina' como link, conforme estava antes --}}
                             <strong>{{ $pag['info']['url'] ?? 'Página ' . $loop->iteration }}</strong><br>
                             <span style="color: #666; font-size: 0.8em;">{{ \Illuminate\Support\Str::limit($pag['info']['pagina'] ?? '', 50) }}</span>
                         </td>
@@ -318,8 +341,10 @@
             <div id="pag-{{ $loop->iteration }}" style="position: relative; top: -50px;"></div>
 
             <div class="page-header">
+                {{-- Usa 'url' no título principal --}}
                 <div>3.{{ $loop->iteration }} - {{ $dadosPagina['info']['url'] ?? 'Página' }}</div>
                 <div style="font-size: 0.6em; font-weight: normal; margin-top: 5px; opacity: 0.9;">
+                    {{-- Usa 'pagina' no campo URL --}}
                     URL: {{ $dadosPagina['info']['pagina'] ?? '-' }}
                 </div>
             </div>

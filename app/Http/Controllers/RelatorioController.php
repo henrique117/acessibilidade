@@ -14,9 +14,6 @@ use Spatie\Browsershot\Browsershot;
 
 class RelatorioController extends Controller
 {
-    /**
-     * Função Centralizada: Prepara dados tanto para a Tela (index) quanto para o PDF (gerarPdf)
-     */
     private function prepararDadosRelatorio(Request $request)
     {
         $demandaId = $request->cookie('demanda_authenticated') ?? $request->input('demanda_id');
@@ -26,9 +23,7 @@ class RelatorioController extends Controller
 
         $usuario = Auth::user();
 
-        // 1. DADOS COMUNS (Erros e Páginas)
-        // Carregamos item, critérios do item e imagens dos erros
-        // Importante: 'item.criterios' para poder calcular A/AA/AAA
+        // Carrega erros, itens e criterios
         $erros = Erro::with(['item.criterios', 'images'])->where('avaliacao_id', $demandaId)->get();
         
         $paginasDemanda = $demanda->paginas;
@@ -42,22 +37,15 @@ class RelatorioController extends Controller
         $isRelatorioCompleto = $request->input('relatorio_completo');
         $paginasSelecionadas = $request->input('paginas', []); 
 
-        // 2. RECUPERAÇÃO DE CATEGORIAS (ESSENCIAL PARA A VIEW WELCOME)
+        // Recuperação de Categorias para a View Welcome
         $categorias = [];
-        
         if ($opcaoEscolhida === 'wcag') {
-            $categorias = Diretriz::with([
-                'criterios.itens.checklist', 
-                'criterios.itens.criterios' 
-            ])->get();
+            $categorias = Diretriz::with(['criterios.itens.checklist', 'criterios.itens.criterios'])->get();
         } else {
-            $categorias = Checklist::with([
-                'itens.criterios', 
-                'itens.checklist'
-            ])->get();
+            $categorias = Checklist::with(['itens.criterios', 'itens.checklist'])->get();
         }
 
-        // 3. MAPEAMENTO DE ERROS POR ITEM (PARA A VIEW WELCOME)
+        // Mapeamento para View Welcome
         $tem_erro_map = [];
         $avaliacao_map = [];
         $pgs_map = [];
@@ -66,7 +54,7 @@ class RelatorioController extends Controller
             $tem_erro_map[$erro->id_item] = $erro;
             $avaliacao_map[$erro->id_item] = $erro->em_cfmd;
 
-            // Decodifica páginas deste erro
+            // Decodifica páginas
             $indicesErro = [];
             $pgsString = (string)$erro->pgs;
             if (strpos($pgsString, ',') !== false) {
@@ -85,21 +73,21 @@ class RelatorioController extends Controller
             $pgs_map[$erro->id_item] = $paginasDetalhadas;
         }
 
-        // 4. PREPARAÇÃO DOS DADOS PARA O PDF (PÁGINA -> ERROS & ESTATÍSTICAS)
+        // --- PREPARAÇÃO DO RELATÓRIO PDF ---
         $relatorioPorPagina = [];
         $statsErros = [];
         $totalTelasAnalizadas = 0;
         $totalDefeitosGeral = 0;
 
-        // Contadores para Níveis de Conformidade
-        $qtdA = 0;
-        $qtdAA = 0;
-        $qtdAAA = 0;
+        $qtdA = 0; $qtdAA = 0; $qtdAAA = 0;
+        $principio1 = 0;
+        $principio2 = 0;
+        $principio3 = 0;
+        $principio4 = 0;
 
         foreach ($paginasDemanda as $index => $paginaObj) {
             $indexStr = (string)$index;
             
-            // Filtro: Relatório Completo OU Página Selecionada
             if ($isRelatorioCompleto || in_array($indexStr, $paginasSelecionadas)) {
                 
                 $totalTelasAnalizadas++;
@@ -120,26 +108,35 @@ class RelatorioController extends Controller
                         $errosDestaPagina[] = $erro;
                         $totalDefeitosGeral++;
 
-                        // --- LÓGICA DE CONFORMIDADE WCAG ---
-                        // Pega os níveis dos critérios associados ao item deste erro
+                        // --- ESTATÍSTICAS WCAG (Nível e Princípio) ---
                         $niveis = [];
+                        $codigos = [];
+
                         if ($erro->item && $erro->item->criterios) {
-                            $niveis = $erro->item->criterios->pluck('conformidade')->map(function($v) {
-                                return strtoupper($v);
-                            })->toArray();
+                            foreach($erro->item->criterios as $crit) {
+                                $niveis[] = strtoupper($crit->conformidade);
+                                $codigos[] = $crit->codigo; // Ex: "1.1.1"
+                            }
                         }
 
-                        // Prioridade: Se tiver critério A, conta como A. Se não, AA. Se não, AAA.
-                        if (in_array('A', $niveis)) {
-                            $qtdA++;
-                        } elseif (in_array('AA', $niveis)) {
-                            $qtdAA++;
-                        } elseif (in_array('AAA', $niveis)) {
-                            $qtdAAA++;
-                        }
-                        // -----------------------------------
+                        // Contagem A/AA/AAA (Prioridade A > AA > AAA)
+                        if (in_array('A', $niveis)) $qtdA++;
+                        elseif (in_array('AA', $niveis)) $qtdAA++;
+                        elseif (in_array('AAA', $niveis)) $qtdAAA++;
 
-                        // Coleta dados para estatísticas de recorrência
+                        // Contagem Princípios
+                        $p1_counted = false; $p2_counted = false; $p3_counted = false; $p4_counted = false;
+
+                        foreach($codigos as $cod) {
+                            $primeiroDigito = substr($cod, 0, 1);
+                            
+                            if ($primeiroDigito === '1' && !$p1_counted) { $principio1++; $p1_counted = true; }
+                            if ($primeiroDigito === '2' && !$p2_counted) { $principio2++; $p2_counted = true; }
+                            if ($primeiroDigito === '3' && !$p3_counted) { $principio3++; $p3_counted = true; }
+                            if ($primeiroDigito === '4' && !$p4_counted) { $principio4++; $p4_counted = true; }
+                        }
+
+                        // Recorrência
                         $idItem = $erro->id_item;
                         $nomeItem = $erro->item ? $erro->item->descricao : ($erro->titulo ?? 'Item #'.$idItem);
 
@@ -160,30 +157,20 @@ class RelatorioController extends Controller
             }
         }
 
-        // Cálculo das Estatísticas Finais (Únicos vs Recorrentes)
+        // Cálculos Finais de Porcentagem
         $totalDefeitosUnicos = 0;
         $totalDefeitosRecorrentes = 0;
 
-        uasort($statsErros, function ($a, $b) {
-            return $b['ocorrencias'] <=> $a['ocorrencias'];
-        });
+        uasort($statsErros, function ($a, $b) { return $b['ocorrencias'] <=> $a['ocorrencias']; });
 
         foreach ($statsErros as $stat) {
-            if ($stat['ocorrencias'] === 1) {
-                $totalDefeitosUnicos++;
-            } else {
-                $totalDefeitosRecorrentes += $stat['ocorrencias'];
-            }
+            if ($stat['ocorrencias'] === 1) $totalDefeitosUnicos++;
+            else $totalDefeitosRecorrentes += $stat['ocorrencias'];
         }
 
-        // Cálculo de Porcentagens de Recorrência
-        $percUnicos = $totalDefeitosGeral > 0 ? ($totalDefeitosUnicos / $totalDefeitosGeral) * 100 : 0;
-        $percRecorrentes = $totalDefeitosGeral > 0 ? ($totalDefeitosRecorrentes / $totalDefeitosGeral) * 100 : 0;
-        
-        // Cálculo de Porcentagens de Conformidade
-        $percA = $totalDefeitosGeral > 0 ? ($qtdA / $totalDefeitosGeral) * 100 : 0;
-        $percAA = $totalDefeitosGeral > 0 ? ($qtdAA / $totalDefeitosGeral) * 100 : 0;
-        $percAAA = $totalDefeitosGeral > 0 ? ($qtdAAA / $totalDefeitosGeral) * 100 : 0;
+        $calcPerc = function($qtd) use ($totalDefeitosGeral) {
+            return $totalDefeitosGeral > 0 ? number_format(($qtd / $totalDefeitosGeral) * 100, 2, ',', '.') . '%' : '0,00%';
+        };
 
         $ranking = array_values($statsErros);
 
@@ -193,22 +180,25 @@ class RelatorioController extends Controller
             
             // Recorrência
             'total_unicos' => $totalDefeitosUnicos,
-            'perc_unicos' => number_format($percUnicos, 2, ',', '.') . '%',
+            'perc_unicos' => $calcPerc($totalDefeitosUnicos),
             'total_recorrentes' => $totalDefeitosRecorrentes,
-            'perc_recorrentes' => number_format($percRecorrentes, 2, ',', '.') . '%',
+            'perc_recorrentes' => $calcPerc($totalDefeitosRecorrentes),
 
-            // Conformidade WCAG
-            'perc_A' => number_format($percA, 2, ',', '.') . '%',
-            'perc_AA' => number_format($percAA, 2, ',', '.') . '%',
-            'perc_AAA' => number_format($percAAA, 2, ',', '.') . '%',
+            // Níveis WCAG
+            'perc_A' => $calcPerc($qtdA),
+            'perc_AA' => $calcPerc($qtdAA),
+            'perc_AAA' => $calcPerc($qtdAAA),
+
+            // Princípios WCAG
+            'perc_p1' => $calcPerc($principio1),
+            'perc_p2' => $calcPerc($principio2),
+            'perc_p3' => $calcPerc($principio3),
+            'perc_p4' => $calcPerc($principio4),
             
             // Ranking
-            'top_1_nome' => $ranking[0]['nome'] ?? 'Nenhum',
-            'top_1_qtd' => $ranking[0]['ocorrencias'] ?? 0,
-            'top_2_nome' => $ranking[1]['nome'] ?? 'Nenhum',
-            'top_2_qtd' => $ranking[1]['ocorrencias'] ?? 0,
-            'top_3_nome' => $ranking[2]['nome'] ?? 'Nenhum',
-            'top_3_qtd' => $ranking[2]['ocorrencias'] ?? 0,
+            'top_1_nome' => $ranking[0]['nome'] ?? 'Nenhum', 'top_1_qtd' => $ranking[0]['ocorrencias'] ?? 0,
+            'top_2_nome' => $ranking[1]['nome'] ?? 'Nenhum', 'top_2_qtd' => $ranking[1]['ocorrencias'] ?? 0,
+            'top_3_nome' => $ranking[2]['nome'] ?? 'Nenhum', 'top_3_qtd' => $ranking[2]['ocorrencias'] ?? 0,
         ];
 
         return [
@@ -232,7 +222,6 @@ class RelatorioController extends Controller
     {
         $dados = $this->prepararDadosRelatorio($request);
         if (!$dados) return redirect()->route('demanda.mostrar');
-        
         return view('welcome', $dados);
     }
 
@@ -240,12 +229,10 @@ class RelatorioController extends Controller
     {
         set_time_limit(300);
         $dados = $this->prepararDadosRelatorio($request);
-
         if (!$dados) return redirect()->back()->with('error', 'Erro ao processar dados.');
 
         try {
             $html = view('components.relatorio', $dados)->render();
-            
             $pdf = Browsershot::html($html)
                 ->format('A4')
                 ->margins(15, 15, 15, 15)
@@ -256,7 +243,6 @@ class RelatorioController extends Controller
             return response($pdf)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="relatorio-acessibilidade.pdf"');
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
