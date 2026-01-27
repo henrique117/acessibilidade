@@ -55,7 +55,7 @@
                     @foreach ($paginas as $key=>$pg)
                     <div>
                         <input type="checkbox" value="{{$key}}" name="pgs[]" id="{{$key}}">
-                        <label>{{ $pg['pagina'] }}</label>
+                        <label>{{ $pg['url'] }}</label>
                     </div>
                     @endforeach
                 </div>

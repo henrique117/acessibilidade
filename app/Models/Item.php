@@ -9,13 +9,25 @@ class Item extends Model
 {
     use HasFactory;
 
-    protected $table = 'itens'; //Definindo o nome da tabela, pois o nome dela não segue o padrão do laravel
+    protected $table = 'itens';
 
-    public function checklist(){
+    protected $fillable = [
+        'checklist_id',
+        'descricao',
+    ];
+
+    public function checklist()
+    {
         return $this->belongsTo(Checklist::class);
     }
 
-    public function criterios(){
-        return $this->belongsToMany(Criterio::class);
+    /**
+     * CORREÇÃO: Relacionamento Muitos-para-Muitos com Critérios.
+     * Necessário para o @foreach ($itemChecklist->criterios ...) funcionar.
+     */
+    public function criterios()
+    {
+        // Tabela pivô: criterio_item
+        return $this->belongsToMany(Criterio::class, 'criterio_item', 'item_id', 'criterio_id');
     }
 }

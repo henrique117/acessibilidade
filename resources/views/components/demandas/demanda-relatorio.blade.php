@@ -13,9 +13,11 @@
     <h2>Gerador de Relatório: {{ $demanda->nome }}</h2>
     <p>Selecione as opções que deseja incluir no seu relatório:</p>
 
-    <form action="/gerar-relatorio" method="POST">
+    <form action="{{ route('relatorio.pdf') }}" method="POST" target="_blank">
         @csrf
 
+        <input type="hidden" name="demanda_id" value="{{ $demanda->id }}">
+        
         <fieldset>
             <legend>Opções de Conteúdo</legend>
 
@@ -33,20 +35,6 @@
                 </div>
             @endforeach
 
-        </fieldset>
-
-        <fieldset>
-            <legend>Opções de Formato</legend>
-            
-            <div class="checkbox-group">
-                <input type="checkbox" id="exportar_abnt" name="formato_abnt" value="1">
-                <label for="exportar_pdf">Exportar com padrão ABNT</label>
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="exportar_wcag" name="formato_wcag" value="1">
-                <label for="enviar_email">Exportar com padrão WCAG</label>
-            </div>
         </fieldset>
 
         <br>

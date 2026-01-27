@@ -9,6 +9,10 @@
     @vite(entrypoints: ['resources/css/guide.css' ,'resources/js/guideliness.js'])
 </head>
 <body>
+    @php
+        $opcaoEscolhida = $opcaoEscolhida ?? 'wcag';
+        $tipo = $tipo ?? '4';
+    @endphp
 
     <div class="modal" id="modalDeletarProblema">
         <div class="conteudo-modal modalDeletarProblema">
@@ -57,12 +61,6 @@
 
     </div>
 
-
-
-
-
-
-    <!--TRECHO DO GLOSSARIO-->
     <div id="glossarioMenuSuspenso" class="menuSuspenso">
         <div class="barra">
             <p>GLOSSÁRIO</p>
@@ -94,8 +92,6 @@
     </div>
 
    
-
-
             <div id="filtros" class="menuSuspenso">
                 <div class="barra">
                     <p>FILTROS</p>
@@ -108,10 +104,16 @@
                         @csrf
                         <div>
                             <label for="opcaoAvaliacoes">TIPO DE AVALIAÇÃO: </label>
+                            
+                            <strong>WCAG</strong>
+                            <input type="hidden" name="diretriz" value="wcag">
+
+                            {{-- 
                             <select id="opcaoAvaliacoes" name="diretriz" onchange="this.form.submit()">
                                 <option value="abnt" @if($opcaoEscolhida == 'abnt') selected @endif>ABNT</option>
                                 <option value="wcag" @if($opcaoEscolhida == 'wcag') selected @endif>WCAG</option>
-                            </select>
+                            </select> 
+                            --}}
                         </div>
             
                         <div>
@@ -238,7 +240,7 @@
                                     @component('components.pagina_erros.erro-preview', ['tem_erro' => $tem_erro, 'itemChecklist' => $itemChecklist,'pgs'=>$pgs])
                                     @endcomponent
                                 </div>    
-                                    @endif
+                                @endif
                             @endforeach
                         </div>
                     </div>
