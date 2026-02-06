@@ -35,12 +35,3 @@ INSERT INTO `criterio_item` (`id`, `criterio_id`, `item_id`, `created_at`, `upda
 (5, 1, 5, NULL, NULL),
 (8, 2, 8, NULL, NULL),
 (10, 2, 9, NULL, NULL);
-
-
-
-
-
-
-
-
-
