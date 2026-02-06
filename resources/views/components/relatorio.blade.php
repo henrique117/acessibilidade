@@ -112,6 +112,27 @@
         .label { font-weight: bold; color: #2c3e50; display: block; margin-bottom: 5px; margin-top: 10px; }
         .desc-tecnica { background: #fcfcfc; padding: 10px; border-left: 3px solid #ddd; font-size: 0.95em; }
         .evidence-img { max-width: 100%; max-height: 300px; border: 1px solid #999; margin: 5px 0; }
+        
+        /* Estilo para etiquetas de Critérios */
+        .badge-criterio {
+            display: inline-block;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            color: #1565c0;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .container-criterios {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #b0bec5;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -146,7 +167,7 @@
                     @foreach($relatorioPorPagina as $pag)
                         <li class="toc-subitem">
                             <a href="#pag-{{ $loop->iteration }}" class="toc-sublink">
-                                {{-- Exibe 'url' como texto, conforme solicitado (revertido para o estado anterior) --}}
+                                {{-- REVERTIDO: 'url' como título e 'pagina' como link, conforme estava antes --}}
                                 3.{{ $loop->iteration }} - {{ \Illuminate\Support\Str::limit($pag['info']['url'] ?? 'Página ' . $loop->iteration, 60) }}
                             </a>
                         </li>
@@ -175,7 +196,7 @@
         </div>
     </div>
 
-    <!-- 4. VISÃO GERAL (NOVAS ESTATÍSTICAS) -->
+    <!-- 4. VISÃO GERAL -->
     <div id="visao-geral">
         <h2 class="section-header">2. Visão Geral da Análise</h2>
         
@@ -191,7 +212,7 @@
             </div>
         </div>
 
-        <!-- Tabela de Tipos de Defeito (Recorrência) -->
+        <!-- Tabela Recorrência -->
         <h3>Análise de Recorrência</h3>
         <table class="tabela-stats">
             <thead>
@@ -221,7 +242,7 @@
             </tbody>
         </table>
 
-        <!-- Tabela Conformidade WCAG (Nível) -->
+        <!-- Tabela Níveis WCAG -->
         <h3>Níveis de Conformidade WCAG</h3>
         <table class="tabela-stats">
             <thead>
@@ -237,7 +258,7 @@
             </tbody>
         </table>
 
-        <!-- NOVA TABELA: Princípios WCAG -->
+        <!-- Tabela Princípios WCAG -->
         <h3>Princípios WCAG</h3>
         <table class="tabela-stats">
             <thead>
@@ -319,7 +340,7 @@
                 @foreach($relatorioPorPagina as $pag)
                     <tr>
                         <td class="col-pag">
-                            {{-- Usa 'url' como título e 'pagina' como link, conforme estava antes --}}
+                            {{-- REVERTIDO: 'url' como título --}}
                             <strong>{{ $pag['info']['url'] ?? 'Página ' . $loop->iteration }}</strong><br>
                             <span style="color: #666; font-size: 0.8em;">{{ \Illuminate\Support\Str::limit($pag['info']['pagina'] ?? '', 50) }}</span>
                         </td>
@@ -341,10 +362,9 @@
             <div id="pag-{{ $loop->iteration }}" style="position: relative; top: -50px;"></div>
 
             <div class="page-header">
-                {{-- Usa 'url' no título principal --}}
+                {{-- REVERTIDO: 'url' no título --}}
                 <div>3.{{ $loop->iteration }} - {{ $dadosPagina['info']['url'] ?? 'Página' }}</div>
                 <div style="font-size: 0.6em; font-weight: normal; margin-top: 5px; opacity: 0.9;">
-                    {{-- Usa 'pagina' no campo URL --}}
                     URL: {{ $dadosPagina['info']['pagina'] ?? '-' }}
                 </div>
             </div>
@@ -363,6 +383,19 @@
                         <div style="margin-bottom: 10px; font-weight: bold; color: #2c3e50;">
                              {{ $erro->item->descricao ?? $erro->titulo ?? 'Erro Identificado' }}
                         </div>
+
+                        @if(isset($erro->item) && isset($erro->item->criterios) && count($erro->item->criterios) > 0)
+                            <div class="container-criterios">
+                                <span style="font-weight: bold; font-size: 0.85em; color: #546e7a; display: block; margin-bottom: 5px; text-transform: uppercase;">Critérios WCAG Afetados:</span>
+                                <div>
+                                    @foreach($erro->item->criterios as $criterio)
+                                        <span class="badge-criterio">
+                                            {{ $criterio->codigo }} ({{ strtoupper($criterio->conformidade) }})
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                         
                         <span class="label">Descrição do Problema:</span>
                         <div class="desc-tecnica">{!! $erro->descricao !!}</div>
