@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreign('id_item')->references('id')->on('itens');
             $table->integer('em_cfmd');
             $table->longText('descricao');
+            $table->enum('criticidade', ['Alta', 'Média', 'Baixa']); 
+            $table->text('comportamento_esperado');
             $table->timestamps();
             $table->unsignedBigInteger('avaliacao_id');
             $table->foreign('avaliacao_id')->references('id')->on('avaliacao')->onDelete('cascade');

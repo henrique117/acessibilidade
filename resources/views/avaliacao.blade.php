@@ -63,11 +63,25 @@
             </div>
         </div>
         
-
         <div>
             <h1 class="tituloGerall">DESCRIÇÃO DO PROBLEMA</h1>
             <div id="editor"></div>
             <input type="hidden" class="descricao" name="descricao" id="conteudoHidden">
+        </div>
+
+        <div>
+            <h1 class="tituloGerall">NÍVEL DE CRITICIDADE</h1>
+            <select name="criticidade" id="criticidade" style="width: 100%; padding: 10px; margin-bottom: 20px; font-size: 1rem; border: 0.3vw solid #3700DB; border-radius: 0.3vw;">
+                <option value="Baixa" {{ (isset($tem_erro->criticidade) && $tem_erro->criticidade == 'Baixa') ? 'selected' : '' }}>Baixa</option>
+                <option value="Média" {{ (isset($tem_erro->criticidade) && $tem_erro->criticidade == 'Média') ? 'selected' : (!isset($tem_erro->criticidade) ? 'selected' : '') }}>Média</option>
+                <option value="Alta" {{ (isset($tem_erro->criticidade) && $tem_erro->criticidade == 'Alta') ? 'selected' : '' }}>Alta</option>
+            </select>
+        </div>
+
+        <div>
+            <h1 class="tituloGerall">COMPORTAMENTO ESPERADO</h1>
+            <div id="editorComportamento" style="height: 8vw;"></div>
+            <input type="hidden" name="comportamento_esperado" id="comportamentoHidden">
         </div>
 
         <div>
@@ -98,5 +112,34 @@
         const paginas = @json($paginas);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toolbarOptions = [
+                [{ 'header': [false, 1, 2, 3] }],
+                ['bold', 'italic', 'underline'],
+                ['link'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['clean']
+            ];
+
+            const quillComportamento = new Quill('#editorComportamento', {
+                theme: 'snow',
+                modules: {
+                    toolbar: toolbarOptions
+                }
+            });
+
+            const comportamentoExistente = @json($tem_erro->comportamento_esperado ?? '');
+            if (comportamentoExistente) {
+                quillComportamento.clipboard.dangerouslyPasteHTML(comportamentoExistente);
+            }
+
+            var form = document.getElementById('myForm');
+            form.addEventListener('submit', function() {
+                var comportamentoHidden = document.getElementById('comportamentoHidden');
+                comportamentoHidden.value = quillComportamento.root.innerHTML;
+            });
+        });
+    </script>
 </body>
 </html>

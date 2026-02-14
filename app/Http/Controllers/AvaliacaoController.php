@@ -68,19 +68,35 @@ class AvaliacaoController extends Controller
         $opcao = $request->input('opcao');
         $descricao = $request->input('descricao');
         $id = $request->input('id');
+        
         $erro = new Erro();
         $erro->id_item = $id;
         $erro->em_cfmd = $opcao;
         $demanda = $request->input('id_demanda');
         $erro->avaliacao_id = $demanda;
+
+        // Valores padrão para campos obrigatórios para evitar erro SQL se não for "Não Conforme"
+        $erro->criticidade = 'Baixa';
+        $erro->comportamento_esperado = ''; 
+        // Normalmente descrição também precisa de valor se for NOT NULL
+        if(empty($erro->descricao)) $erro->descricao = '';
+
         if($erro->em_cfmd == '2'){
             $erro->descricao = $descricao;
+            
+            // Novos Campos
+            $erro->criticidade = $request->input('criticidade');
+            $erro->comportamento_esperado = $request->input('comportamento_esperado');
+
             $paginas = "";
             $erro->pgs = $request->input('pgs');
-            foreach($erro->pgs as $pgs){
-                $paginas = $paginas.$pgs;
+            if(is_array($erro->pgs)){
+                foreach($erro->pgs as $pgs){
+                    $paginas = $paginas.$pgs;
+                }
             }
             $erro->pgs = $paginas;
+            
             $erro->save(); 
 
             if($request->hasFile('imagens')) {
@@ -97,12 +113,15 @@ class AvaliacaoController extends Controller
                         $imagePath = '/img/erros' . '/' . $imageName;
                 
                         $imagem = new Image();
-                        $imagem->id_erro = $erro->id; // Certifique-se de definir $erro antes de usar neste código
+                        $imagem->id_erro = $erro->id; 
                         $imagem->path_image = $imagePath;
-                        $imagem->save();}
-        }}}
+                        $imagem->save();
+                    }
+                }
+            }
+        }
+        
         $erro->save(); 
-
 
         return redirect()->route('index.mostrar');
     }
@@ -114,7 +133,7 @@ class AvaliacaoController extends Controller
        //Pegando o id do item para encontrar o erro correspondente
 
        $demandaId = $request->cookie('demanda_authenticated');
-        
+       
         $erro = Erro::where('id_item','=',$id_item)->where('avaliacao_id', $demandaId)->first();
 
         //Pegando o array de imagens que estão relacionadas ao erro
@@ -125,7 +144,9 @@ class AvaliacaoController extends Controller
 
         foreach($imagens_deletar as $imagens){
             $caminho = str_replace('/',DIRECTORY_SEPARATOR,$imagens->path_image);
-            unlink(public_path('').$caminho);
+            if(file_exists(public_path('').$caminho)){
+                unlink(public_path('').$caminho);
+            }
         }
 
         //Excluindo as imagens no banco de dados
@@ -154,23 +175,38 @@ class AvaliacaoController extends Controller
         if(null !== $request->input('opcao')){ 
             $erro->em_cfmd = $request->input('opcao');
         }
+        
         if($erro->em_cfmd == "2"){
 
-        if(null !== $request->input('descricao')){
-            $erro->descricao = $request->input('descricao');
-        }
-        if(null !== $request->input('pgs')){
-            $paginas = "";
-            $erro->pgs = $request->input('pgs');
-            foreach($erro->pgs as $pgs){
-                $paginas = $paginas.$pgs;
+            if(null !== $request->input('descricao')){
+                $erro->descricao = $request->input('descricao');
             }
-            $erro->pgs = $paginas;
-        }
+            
+            // Novos Campos - Atualização
+            if(null !== $request->input('criticidade')){
+                $erro->criticidade = $request->input('criticidade');
+            }
+            if(null !== $request->input('comportamento_esperado')){
+                $erro->comportamento_esperado = $request->input('comportamento_esperado');
+            }
+
+            if(null !== $request->input('pgs')){
+                $paginas = "";
+                $erro->pgs = $request->input('pgs');
+                if(is_array($erro->pgs)){
+                    foreach($erro->pgs as $pgs){
+                        $paginas = $paginas.$pgs;
+                    }
+                }
+                $erro->pgs = $paginas;
+            }
         }
         else{
             $erro->pgs = '';
             $erro->descricao = '';
+            // Resetar novos campos se não houver erro
+            $erro->criticidade = 'Baixa';
+            $erro->comportamento_esperado = '';
         }
 
         
@@ -191,7 +227,9 @@ class AvaliacaoController extends Controller
                 foreach($imagens_deletar as $imagens){
                     Image::where('id','=',$imagens->id)->delete();
                     $caminho = str_replace('/',DIRECTORY_SEPARATOR,$imagens->path_image);
-                    unlink(public_path('').$caminho);
+                    if(file_exists(public_path('').$caminho)){
+                        unlink(public_path('').$caminho);
+                    }
                 }
 
                 //Agora realiza o mesmo passo do armazenamento, que é colocar as imagens tanto em arquivo quanto no banco de dados
@@ -222,7 +260,9 @@ class AvaliacaoController extends Controller
 
                 foreach($imagens_deletar as $imagens){
                     $caminho = str_replace('/',DIRECTORY_SEPARATOR,$imagens->path_image);
-                    unlink(public_path('').$caminho);
+                    if(file_exists(public_path('').$caminho)){
+                        unlink(public_path('').$caminho);
+                    }
                 }
 
                 Image::where('id_erro','=',$erro->id)->delete();

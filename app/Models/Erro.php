@@ -16,6 +16,8 @@ class Erro extends Model
         'id_item',
         'em_cfmd',
         'descricao',
+        'criticidade',
+        'comportamento_esperado',
         'avaliacao_id',
     ];
 
