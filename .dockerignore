@@ -1,0 +1,10 @@
+/node_modules
+/public/build
+/public/hot
+/storage/*.key
+/vendor
+.env.example
+.git
+.phpunit.result.cache
+docker-compose.yml
+Dockerfile
