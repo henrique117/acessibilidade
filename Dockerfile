@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     nodejs \
-    npm
+    npm \
+    chromium
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -27,10 +28,15 @@ WORKDIR /var/www/html
 
 COPY . .
 
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 RUN composer install --no-interaction --optimize-autoloader
 RUN npm install
 RUN npm run build
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+RUN mkdir -p /var/www/.npm /var/www/.cache/puppeteer \
+    && chown -R www-data:www-data /var/www/.npm /var/www/.cache
 
 EXPOSE 80

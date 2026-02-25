@@ -224,6 +224,8 @@ class RelatorioController extends Controller
         try {
             $html = view('components.relatorio', $dados)->render();
             $pdf = Browsershot::html($html)
+                ->setChromePath('/usr/bin/chromium')
+                ->noSandbox()
                 ->format('A4')
                 ->margins(15, 15, 15, 15)
                 ->showBackground()
