@@ -30,6 +30,8 @@ COPY . .
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
+ENV CYPRESS_INSTALL_BINARY=0
+
 RUN composer install --no-interaction --optimize-autoloader
 RUN npm install
 RUN npm run build
