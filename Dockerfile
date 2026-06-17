@@ -38,6 +38,10 @@ RUN npm run build
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+RUN echo "upload_max_filesize = 20M\npost_max_size = 25M\nmemory_limit = 256M" > /usr/local/etc/php/conf.d/uploads.ini
+
+RUN php artisan storage:link || true
+
 RUN mkdir -p /var/www/.npm /var/www/.cache/puppeteer \
     && chown -R www-data:www-data /var/www/.npm /var/www/.cache
 

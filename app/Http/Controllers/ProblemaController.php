@@ -6,6 +6,7 @@ use App\Models\Tarefa;
 use App\Models\Problema;
 use App\Models\TarefaProblema;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProblemaController extends Controller
 {
@@ -16,7 +17,7 @@ class ProblemaController extends Controller
         $problema = $problema = Problema::where('sessao_id', $sessao->id)
         ->with(['tarefas'])
         ->get();
-        
+
         return view('problema_index',['tarefas'=>$tarefas,'sessao'=>$sessao,'problemas'=>$problema]);
     }
 
@@ -26,9 +27,9 @@ class ProblemaController extends Controller
         $problema->sessao_id = $request->idSessao;
         $problema->descricao = $request->descricao;
         $problema->titulo = $request->titulo;
-        
+
         $problema->save();
-        
+
         if($request->tarefas == null){
             return redirect()->route('problemasVer',['sessao_id'=>$request->idSessao]);
         }
@@ -66,8 +67,15 @@ class ProblemaController extends Controller
         return redirect()->route('problemasVer',['sessao_id'=>$request->idSessao]);
     }
 
+    public function uploadImagem(Request $request){
+        $request->validate([
+            'image' => 'required|image|max:10240',
+        ]);
 
+        $path = $request->file('image')->store('problemas', 'public');
 
-
-
+        return response()->json([
+            'url' => Storage::url($path),
+        ]);
+    }
 }

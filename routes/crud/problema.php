@@ -14,6 +14,8 @@ Route::middleware([
 
     Route::post('/problemas',[ProblemaController::class,"store"])->name("problemasAdicionar");
 
+    Route::post('/problemas/upload-imagem',[ProblemaController::class,"uploadImagem"])->name("problemaUploadImagem");
+
     Route::delete('/problemas',[ProblemaController::class,"delete"])->name("problemasRemover");
 
     Route::put('/problemas',[ProblemaController::class,"edit"])->name("problemasEditar");

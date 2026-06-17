@@ -119,6 +119,7 @@
             rotaEditar: "{{ route('problemasEditar') }}",
             rotaDeletar: "{{route('problemasRemover')}}",
             rotaAdicionar: "{{route('problemasAdicionar')}}",
+            rotaUploadImagem: "{{route('problemaUploadImagem')}}",
             sessaoId: "{{$sessao->id}}"
         }
 

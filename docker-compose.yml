@@ -14,6 +14,8 @@ services:
       - DB_HOST=db
     depends_on:
       - db
+    volumes:
+      - storage_public:/var/www/html/storage/app/public
     networks:
       - laravel_network
       - public_proxy
@@ -40,3 +42,4 @@ networks:
 
 volumes:
   db_data:
+  storage_public:

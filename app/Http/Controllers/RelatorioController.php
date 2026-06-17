@@ -229,7 +229,8 @@ class RelatorioController extends Controller
                 ->format('A4')
                 ->margins(15, 15, 15, 15)
                 ->showBackground()
-                ->waitUntilNetworkIdle()
+                ->timeout(120000)
+                ->waitUntilNetworkIdle(false)
                 ->pdf();
 
             return response($pdf)
