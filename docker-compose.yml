@@ -16,6 +16,7 @@ services:
       - db
     volumes:
       - storage_public:/var/www/html/storage/app/public
+      - img_erros:/var/www/html/public/img/erros
     networks:
       - laravel_network
       - public_proxy
@@ -43,3 +44,4 @@ networks:
 volumes:
   db_data:
   storage_public:
+  img_erros:

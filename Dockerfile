@@ -36,7 +36,8 @@ RUN composer install --no-interaction --optimize-autoloader
 RUN npm install
 RUN npm run build
 
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN mkdir -p /var/www/html/public/img/erros \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/img/erros
 
 RUN echo "upload_max_filesize = 20M\npost_max_size = 25M\nmemory_limit = 256M" > /usr/local/etc/php/conf.d/uploads.ini
 
