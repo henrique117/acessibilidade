@@ -226,6 +226,7 @@ class RelatorioController extends Controller
             $pdf = Browsershot::html($html)
                 ->setChromePath('/usr/bin/chromium')
                 ->noSandbox()
+                ->setOption('args', ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'])
                 ->format('A4')
                 ->margins(15, 15, 15, 15)
                 ->showBackground()

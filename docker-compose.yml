@@ -14,6 +14,7 @@ services:
       - DB_HOST=db
     depends_on:
       - db
+    shm_size: '256m'
     volumes:
       - storage_public:/var/www/html/storage/app/public
       - img_erros:/var/www/html/public/img/erros
