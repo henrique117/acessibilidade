@@ -39,7 +39,7 @@
                     onclick="window.location.href='{{ route('demandas.gerarRelatorio', ['id' => $demanda->id]) }}'"
                     class="button" 
                     data-cy="botao_relatorio_{{ $demanda->id }}">
-                DETALHES
+                RELATÓRIO
             </button>
         </form>
     </div>
