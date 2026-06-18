@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -14,7 +12,7 @@ services:
       - DB_HOST=db
     depends_on:
       - db
-    shm_size: '256m'
+    shm_size: '1gb'
     volumes:
       - storage_public:/var/www/html/storage/app/public
       - img_erros:/var/www/html/public/img/erros

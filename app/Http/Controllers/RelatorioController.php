@@ -217,20 +217,24 @@ class RelatorioController extends Controller
 
     public function gerarPdf(Request $request)
     {
-        set_time_limit(300);
+        set_time_limit(120);
         $dados = $this->prepararDadosRelatorio($request);
         if (!$dados) return redirect()->back()->with('error', 'Erro ao processar dados.');
 
         try {
             $html = view('components.relatorio', $dados)->render();
+
             $pdf = Browsershot::html($html)
                 ->setChromePath('/usr/bin/chromium')
                 ->noSandbox()
-                ->setOption('args', ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'])
+                ->addChromiumArguments([
+                    'disable-dev-shm-usage',
+                    'disable-gpu',
+                ])
                 ->format('A4')
                 ->margins(15, 15, 15, 15)
                 ->showBackground()
-                ->timeout(120000)
+                ->timeout(90)
                 ->waitUntilNetworkIdle(false)
                 ->pdf();
 
@@ -238,7 +242,13 @@ class RelatorioController extends Controller
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="relatorio-acessibilidade.pdf"');
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            \Log::error('Falha ao gerar PDF do relatório', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Não foi possível gerar o PDF. Tente novamente.',
+            ], 500);
         }
     }
 }

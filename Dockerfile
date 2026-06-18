@@ -1,8 +1,10 @@
-FROM php:8.2-apache
+FROM php:8.2-apache-bookworm
 
-RUN apt-get update && apt-get install -y \
+# Pacotes do sistema + Chromium e suas dependências de runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
+    ca-certificates \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
@@ -10,10 +12,28 @@ RUN apt-get update && apt-get install -y \
     unzip \
     nodejs \
     npm \
-    chromium
+    chromium \
+    libnss3 \
+    libxss1 \
+    libxshmfence1 \
+    libgbm1 \
+    libasound2 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
+# Extensões PHP
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 RUN a2enmod rewrite
@@ -28,9 +48,13 @@ WORKDIR /var/www/html
 
 COPY . .
 
+# Não baixar Chromium via Puppeteer: usamos o do sistema
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-
 ENV CYPRESS_INSTALL_BINARY=0
+
+# Caminho do Chromium do sistema (consumido pelo Browsershot/Puppeteer)
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV CHROME_PATH=/usr/bin/chromium
 
 RUN composer install --no-interaction --optimize-autoloader
 RUN npm install
@@ -43,6 +67,7 @@ RUN echo "upload_max_filesize = 20M\npost_max_size = 25M\nmemory_limit = 256M" >
 
 RUN php artisan storage:link || true
 
+# Diretórios graváveis para caches de Node/Puppeteer e home do www-data
 RUN mkdir -p /var/www/.npm /var/www/.cache/puppeteer \
     && chown -R www-data:www-data /var/www/.npm /var/www/.cache
 
