@@ -225,7 +225,7 @@ class RelatorioController extends Controller
             $html = view('components.relatorio', $dados)->render();
 
             $pdf = Browsershot::html($html)
-                ->setChromePath('/usr/bin/chromium')
+                ->setChromePath(env('CHROME_PATH', '/usr/bin/chromium'))
                 ->noSandbox()
                 ->addChromiumArguments([
                     'disable-dev-shm-usage',
