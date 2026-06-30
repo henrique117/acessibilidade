@@ -10,6 +10,7 @@ services:
       - .env
     environment:
       - DB_HOST=db
+      - CHROME_PATH=/usr/bin/chromium
     depends_on:
       - db
     shm_size: '1gb'
